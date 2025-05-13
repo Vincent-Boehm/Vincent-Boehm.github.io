@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Vincent Böhm" />
+  <meta name="dcterms.date" content="2025-01-01" />
+  <title>Computational Efficiency Gains in Heat Simulation via Discretization Parameter Optimization</title>
+  <style>
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      background-color: #1a1a1a;
+      border: none;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js"
+  type="text/javascript"></script>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Computational Efficiency Gains in Heat Simulation via
+Discretization Parameter Optimization</h1>
+<p class="author">Vincent Böhm</p>
+<p class="date">2025</p>
+</header>
+<div class="center">
+<p>Gymnasium Johanneum</p>
+<p>Besondere Lernleistung</p>
+<p>Supervisor: Michael Webermann</p>
+</div>
+<h1 id="abstract">Abstract</h1>
+<p>This study investigates the computational efficiency gains achieved
+by optimizing discretization parameters in the Forward-Time
+Central-Space (FTCS) method for solving the heat equation. The
+hypothesis posits that setting the spatial discretization parameter
+<span class="math inline">\(\Delta h\)</span> to 1 significantly reduces
+computational costs—measured in floating-point operations (FLOPs) and
+runtime—while maintaining acceptable accuracy. Through numerical
+simulations on a 3D domain, the results demonstrate a <span
+class="math inline">\(93.4\%\)</span> reduction in computation time for
+the modified FTCS scheme compared to the standard approach, with an
+average relative error of only <span
+class="math inline">\(0.31\%\)</span>. The findings suggest that the
+proposed optimization not only eliminates redundant arithmetic
+operations but also relaxes stability constraints, enabling larger time
+steps without compromising fidelity.</p>
+<h1 id="introduction">Introduction</h1>
+<p>The heat equation, a cornerstone of mathematical physics, has shaped
+scientific inquiry since its formulation by Joseph Fourier in 1822.
+Originally derived to describe thermal diffusion, its utility spans
+disciplines from engineering to finance. Fourier’s analytical solutions
+revolutionized the study of partial differential equations (PDEs).
+However, these methods are constrained to idealized geometries and
+boundary conditions, necessitating approximations for real-world
+applications. Among early computational schemes, the Forward-Time
+Central-Space (FTCS) method emerged as a foundational explicit algorithm
+for parabolic equations like the heat equation. However, the FTCS
+scheme’s conditional stability, governed by the Courant-Friedrichs-Lewy
+(CFL) condition, highlights inherent trade-offs between discretization
+parameters and computational fidelity.<span class="citation"
+data-cites="heath2018scientific"></span> This is especially true when
+compared against methods that are unconditionally stable.</p>
+<h1 id="hypothesis">Hypothesis</h1>
+<p>The purpose of this study is to test whether changing <span
+class="math inline">\(\Delta h\)</span> within an FTCS scheme to 1 would
+increase performance without causing any notable loss in accuracy. More
+specifically, it is hypothesized that:</p>
+<p>Within the FTCS scheme for solving the heat equation, setting <span
+class="math inline">\(\Delta h\)</span> to 1 will reduce the number of
+computations more than proportionally to the increase in relative
+error.</p>
+<p>The general idea behind why this is worthy of attention is that if
+<span class="math inline">\(\Delta h\)</span> is 1, we save 2 FLOPs per
+point in the coordinate system per iteration. Since the number of points
+in the coordinate system scales with <span
+class="math inline">\(N^3\)</span>, where <span
+class="math inline">\(N\)</span> is the size in each direction, the
+savings from one FLOP saved scale accordingly. As the pointwise
+operation of the FTCS scheme is <span class="math inline">\(\alpha *
+(u^n_{i+1} - 2u^n_{i} + u^n_{i-1})/\Delta h^2\)</span>, it logically
+follows that defining <span class="math inline">\(\Delta h\)</span> as 1
+would remove both a division operation and a squaring operation, saving
+2 FLOPs per pointwise operation.</p>
+<p>To visualize, let us assume we have a 20<span
+class="math inline">\(\times\)</span>20<span
+class="math inline">\(\times\)</span>20 sized coordinate space with one
+point assigned to every integer, and we perform 20 iterations of the
+FTCS method to compute our result. We will save 16,000 FLOPs per
+iteration and 320,000 FLOPs over the course of all iterations. In
+relative terms, we can reduce our total FLOP usage by roughly one-third
+by comparing the total number of FLOPs necessary for each pointwise
+calculation of the FTCS scheme with those where we apply the
+hypothesis.</p>
+<p>This, however, does not consider the savings in computational
+resources that could be yielded from the impact on the stability
+conditions of the FTCS method. Given that the stability condition for
+three spatial dimensions is <span class="math inline">\(\Delta t \ge
+\Delta h^2/(6\alpha)\)</span>, we can see that setting <span
+class="math inline">\(\Delta h\)</span> to 1 would allow much greater
+freedom in choosing <span class="math inline">\(\Delta t\)</span>. This
+would enable one to either keep a larger buffer for use cases that do
+not provide a stable <span class="math inline">\(\Delta t\)</span> value
+or save computational power by reducing the number of iterations
+necessary to finish the simulation.</p>
+<h1 id="methodology">Methodology</h1>
+<p>To test the hypothesis, I ran computer-supported numerical
+simulations and compared the relative and absolute errors of the scalar
+fields from the results of the simulations. Specifically, the FTCS
+method of solving the heat equation is used in comparison to the method
+outlined in the hypothesis. This decision was made on the basis that the
+method outlined within the hypothesis is an iterative change to the FTCS
+method; thus, comparison between these methods is a better way to prove
+or disprove the hypothesis than comparing it against other methods of
+solving, like the Crank-Nicolson method. If one is interested in
+replicating these simulations, a link to the GitHub repository can be
+found in the appendix. The code has been made available under the
+Unilicense <span class="citation" data-cites="unilicense"></span>, and
+as such, one is free to use it for further research and replicability
+tests without any permission.</p>
+<p>To consider replication, one must first install Python 3.12.3 or
+higher <span class="citation" data-cites="python-install"></span>.
+Additionally, one will need to install the following pip packages <span
+class="citation" data-cites="pip-guide"></span>: NumPy 2.2.4 <span
+class="citation" data-cites="numpy-pypi"></span>, Plotly 6.0.1 <span
+class="citation" data-cites="plotly-pypi"></span>, SymPy 1.13.3 <span
+class="citation" data-cites="sympy-pypi"></span>, and Numba 0.61.0 <span
+class="citation" data-cites="numba-pypi"></span>. For interpretation,
+one also requires any spreadsheet tool; this paper used Google Sheets,
+which can also be found in the appendix. Since this paper is split into
+two parts—one containing finished research and the other an untested
+hypothesis with an unfinished experiment—should one be interested in
+working on the secondary unfinished research, they will additionally
+require the pip package PyVista 0.44.2 <span class="citation"
+data-cites="pyvista-pip"></span>.</p>
+<p>Additionally, all data presented within spreadsheets or stored as CSV
+files is a flattened version of the scalar field, meaning that the 3D
+shape of the field has been flattened into one singular dimension.
+Trivially, it can be shown that if the shape of two or more 3D scalar
+fields is the same (i.e., they share the same size in each dimension),
+flattening them to one dimension does not change any of the points
+compared. This flattening greatly simplifies data entry into spreadsheet
+software, which is why it has been chosen for this research.</p>
+<p>Most explanations of the structure of the program will include the
+relevant Python code snippet and a flowchart to explain said code in a
+non-technical way. The logic of the snippet and flowchart is identical
+unless otherwise stated. The flowcharts will follow the UML 2.0 state
+machine diagram notation unless otherwise specified <span
+class="citation" data-cites="UML-source"></span>. Additionally, all
+time-based components have been run 5 times stretched out over 1 hour
+each, while minimizing background applications open to ensure a more
+consistent metric for time savings, since directly measuring FLOP
+operations performed would require reading the assembly created by the
+Python interpreter in real time.</p>
+<h2 id="ftcs-simulation">FTCS Simulation</h2>
+<p>This FTCS method implementation will be explained by following the
+structure of the Python source code of the file containing said source
+code in a linear fashion, divided into the following segments:
+importing, constants definition, scalar field preparation, boundary
+condition application, vectorized field calculation, and export and
+presentation. Then, I will elaborate on the simulations I ran and
+considered relevant to the hypothesis and research methodology outlined
+in the introductory part of the methodology section.</p>
+<h4 id="module-imports">Module Imports</h4>
+<p>The import section is rather self-evident and does not require a
+graph to be elaborated upon. This section exists to clarify the changed
+names of imported libraries in later sections and to elaborate on why
+said library has been included in the simulation.</p>
+<div class="sourceCode" id="cb1" data-language="Python"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> plotly.graph_objects <span class="im">as</span> go</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sympy</span></code></pre></div>
+<p>The relevant parts for anyone following along with the code snippets
+are that NumPy has been imported with the alias "np" and will be
+referred to as such in all further mentions of the code and any
+flowcharts. NumPy is included because it is the standard library for
+non-GPU-accelerated numerical computations in Python. It includes a
+multitude of functions for dealing with vectors, fields, and coordinate
+spaces that the Python standard library does not. Additionally,
+replacements of standard library functions tend to be more performant
+than their standard library counterparts. NumPy is also used extensively
+within the scientific community, making previous experience with it
+likely for anyone seeking to replicate my experiment, and as such, it
+has been chosen to make replication easier.</p>
+<p>Plotly.graph_objects has been similarly aliased as "go". It is a
+subcomponent of the Plotly library, which has been included to produce
+the visualizations of the fields that will be shown in the findings.
+Plotly does not impact the computational accuracy of the model, as it
+only visualizes the results produced. As such, we can safely treat this
+object as a "black box" <span class="citation"
+data-cites="blackbox-source"></span>. Concretely, this means there will
+not be a more in-depth explanation, as such is outside the scope of this
+paper.</p>
+<p>SymPy has been imported simply as a relic of previous versions of the
+simulation code and does not impact the current simulation. However, it
+allows those seeking to replicate or find issues with my codebase to
+more easily prove or show programmatically that symbolic statements I
+make (or they conjecture about my program) are correct. Therefore, I
+have decided not to remove its import statement from the source
+code.</p>
+<h4 id="constants">Constants</h4>
+<p>Like the previous section, this section does not contain any flow
+logic or conditionals and, as such, does not require a graph to be
+illustrated clearly. This section of the program deals with setting the
+constants of the simulation, mostly regarding the FTCS scheme’s
+discretization level.</p>
+<div class="sourceCode" id="cb2" data-language="Python"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>delta_h <span class="op">=</span> <span class="fl">0.1</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>delta_t <span class="op">=</span> <span class="fl">0.000015</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>intended_t <span class="op">=</span> <span class="dv">100</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>t <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>X, Y, Z <span class="op">=</span> np.meshgrid(np.arange(<span class="dv">0</span>, <span class="dv">20</span>, <span class="dv">1</span>),</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>np.arange(<span class="dv">0</span>, <span class="dv">20</span>, <span class="dv">1</span>), np.arange(<span class="dv">0</span>, <span class="dv">20</span>, <span class="dv">1</span>))</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>t_field <span class="op">=</span> np.full_like(X, <span class="dv">300</span>, dtype<span class="op">=</span>np.float32)</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>alpha_field <span class="op">=</span> np.full_like(X, <span class="fl">0.1</span>, dtype<span class="op">=</span>np.float32)</span></code></pre></div>
+<p><code>delta_h</code> (from now on <span class="math inline">\(\Delta
+h\)</span>, as outlined in the hypothesis section) is the same as <span
+class="math inline">\(\Delta x\)</span>, <span
+class="math inline">\(\Delta y\)</span>, and <span
+class="math inline">\(\Delta z\)</span>. As such, it defines the level
+of space discretization used within the FTCS scheme.
+<code>delta_t</code> (from now on <span class="math inline">\(\Delta
+t\)</span>) similarly to <span class="math inline">\(\Delta h\)</span>,
+sets the time discretization to be used within the simulation and,
+together with <code>intended_t</code>, sets the number of iterations the
+program will run. <code>intended_t</code> sets the value <span
+class="math inline">\(t\)</span> should reach before the simulation is
+considered finished and the program is terminated. <span
+class="math inline">\(t\)</span> is the starting value of the number of
+iterations and should be set to 0 for all cases, as a simulation cannot
+start in the past or the future. <span class="math inline">\(X\)</span>,
+<span class="math inline">\(Y\)</span>, and <span
+class="math inline">\(Z\)</span> are the three spatial dimensions; they
+are created from the NumPy command <code>meshgrid</code>, which joins
+together three linear spaces created by the <code>np.arange</code>
+command. In essence, this line creates the coordinate space in which our
+simulation will be computed. It is 20 units in size in each direction,
+with one point existing between each number, so our coordinate space has
+a definite size of <span class="math inline">\(20^3\)</span>.</p>
+<p><code>t_field</code> creates the scalar field of temperature that
+spans the coordinate space (i.e., every point within our coordinate
+space is assigned a value in our temperature field). The default value
+here is 300, meaning that for this simulation, the entire coordinate
+space’s temperature at <span class="math inline">\(t_0 = 300K\)</span>,
+except for the boundary values. <code>alpha_field</code> creates a
+scalar field of thermal conductivity for every point within the
+coordinate space and, in this case, sets it to 0.1. This number was
+chosen to allow for as much numerical stability as possible, as this
+reduces total computing time.</p>
+<h4 id="simulation-loop">Simulation Loop</h4>
+<p>This section will cover the actual programmatic loop of solving the
+heat equation given the starting conditions. This section will include
+both the code and a graph elaborating on and illustrating the code for
+non-technical readers. This section will also include a small proof that
+the function for numerically integrating the entire field at one time in
+a way that is compliant with SIMD <span class="citation"
+data-cites="SMID-source"></span> and processes the entire field at once
+is equivalent to calculating it for every point iteratively.</p>
+<div class="sourceCode" id="cb3" data-language="Python"
+data-breaklines="true"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="cf">while</span> t <span class="op">&lt;=</span> intended_t:</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    t_f <span class="op">=</span> np.pad(</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    t_field,</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    pad_width<span class="op">=</span>((<span class="dv">1</span>, <span class="dv">1</span>), (<span class="dv">1</span>, <span class="dv">1</span>), (<span class="dv">1</span>, <span class="dv">1</span>)),</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    mode<span class="op">=</span><span class="st">&#39;constant&#39;</span>,</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    constant_values<span class="op">=</span><span class="dv">0</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    t_f[<span class="dv">0</span>, :, :] <span class="op">=</span> <span class="dv">300</span>  <span class="co"># Top face Room temp</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    t_f[<span class="op">-</span><span class="dv">1</span>, :, :] <span class="op">=</span> <span class="dv">300</span>  <span class="co"># Bottom face Stove</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    t_f[:, <span class="dv">0</span>, :] <span class="op">=</span> <span class="dv">1200</span>  <span class="co"># Front face</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    t_f[:, <span class="op">-</span><span class="dv">1</span>, :] <span class="op">=</span> <span class="dv">300</span>  <span class="co"># Back face</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    t_f[:, :, <span class="dv">0</span>] <span class="op">=</span> <span class="dv">300</span>  <span class="co"># Left face</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    t_f[:, :, <span class="op">-</span><span class="dv">1</span>] <span class="op">=</span> <span class="dv">300</span>  <span class="co"># Right face</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>    t_field <span class="op">+=</span> (</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>        (</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>            (t_f[<span class="dv">2</span>:, <span class="dv">1</span>:<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>:<span class="op">-</span><span class="dv">1</span>] <span class="op">-</span> <span class="dv">2</span> <span class="op">*</span> t_f[<span class="dv">1</span>:<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>:<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>:<span class="op">-</span><span class="dv">1</span>] <span class="op">+</span> t_f[:<span class="op">-</span><span class="dv">2</span>, <span class="dv">1</span>:<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>:<span class="op">-</span><span class="dv">1</span>]) <span class="op">+</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>            (t_f[<span class="dv">1</span>:<span class="op">-</span><span class="dv">1</span>, <span class="dv">2</span>:, <span class="dv">1</span>:<span class="op">-</span><span class="dv">1</span>] <span class="op">-</span> <span class="dv">2</span> <span class="op">*</span> t_f[<span class="dv">1</span>:<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>:<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>:<span class="op">-</span><span class="dv">1</span>] <span class="op">+</span> t_f[<span class="dv">1</span>:<span class="op">-</span><span class="dv">1</span>, :<span class="op">-</span><span class="dv">2</span>, <span class="dv">1</span>:<span class="op">-</span><span class="dv">1</span>]) <span class="op">+</span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>            (t_f[<span class="dv">1</span>:<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>:<span class="op">-</span><span class="dv">1</span>, <span class="dv">2</span>:] <span class="op">-</span> <span class="dv">2</span> <span class="op">*</span> t_f[<span class="dv">1</span>:<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>:<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>:<span class="op">-</span><span class="dv">1</span>] <span class="op">+</span> t_f[<span class="dv">1</span>:<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>:<span class="op">-</span><span class="dv">1</span>, :<span class="op">-</span><span class="dv">2</span>])</span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>        ) <span class="op">*</span> alpha_field</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>    ) <span class="op">*</span> (delta_t <span class="op">/</span> delta_h<span class="op">**</span><span class="dv">2</span>)</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>    t <span class="op">+=</span> delta_t</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(t)</span></code></pre></div>
+<div class="center">
+<p><img src="images/graphs/FTCS_sim_loop.png" style="width:50.0%"
+alt="image" /></p>
+<p>FTCS main loop graph <a href="#fig:FTCS_MAIN_LOOP"
+data-reference-type="ref" data-reference="fig:FTCS_MAIN_LOOP">1</a></p>
+</div>
+<p>As outlined in the graph, when we exit the section of the program
+that defines the constants, we find ourselves at a conditional, which
+can generally be understood to check if the simulation has finished
+(i.e., reached its desired <span class="math inline">\(t\)</span>
+value). If the desired <span class="math inline">\(t\)</span> value has
+not been reached, it will then generate a copy of the
+<code>t_field</code> temperature scalar field and pad its edges by one.
+This is done to avoid errors by indexing out of bounds of an array. Said
+padded edges are then set to the desired boundary values by redefining
+their value before each iteration. Then, the actual FTCS scheme is
+performed on all values of the padded temperature field, which is then
+shrunk down to the size of the original one, essentially removing the
+boundary conditions post-calculation for that iteration. This
+calculation is performed in place, mostly for performance reasons but
+also to limit memory usage, as the equipment this simulation was tested
+on is rather limited in RAM. After performing the in-place calculation,
+<span class="math inline">\(\Delta t\)</span> is added to <span
+class="math inline">\(t\)</span>, and the program calls the starting
+loop again. Once enough iterations have been performed, the while
+statement becomes false, and the program branches to its exit procedure.
+Said procedure flattens the scalar field into a 1D vector, saves said
+vector to the CSV file, and then uses Plotly to create a 3D graph of the
+field to be viewed in the browser.</p>
+<p>Logically, the only difference between the standard FTCS method and
+the one outlined in the hypothesis is <span class="math inline">\(\Delta
+h\)</span> in its version of the code, which is identical unless
+mentioned here. Division by <span class="math inline">\(\Delta
+h\)</span> is dropped, as <span class="math inline">\(\Delta h\)</span>
+is 1, and <span class="math inline">\(1^2 = 1\)</span>, and division by
+1 is a redundant operation.</p>
+<h1
+id="equivalence-of-vectorized-ftcs-and-pointwise-second-derivatives">Equivalence
+of Vectorized FTCS and Pointwise Second Derivatives</h1>
+<p>Within this section, I provide proof that vectorized field operations
+are equivalent to the FTCS scheme’s defined discrete second derivative.
+We will do so by simplifying the problem down to a <span
+class="math inline">\(4 \times 4\)</span> matrix with <span
+class="math inline">\(2 \times 2\)</span> interior points (i.e., much
+like our padded array above, this array has a buffer to which boundary
+conditions are applied). With the simplified <span
+class="math inline">\(4 \times 4\)</span> matrix, I will show that the
+pointwise operations of the FTCS scheme and the vectorized scheme
+outlined in the code above are equivalent, which can trivially be
+expanded to both 3D and arbitrarily sized scalar fields.</p>
+<p>Consider a 2D scalar field on a <span class="math inline">\(4 \times
+4\)</span> grid (<span class="math inline">\(N_x = 4\)</span>, <span
+class="math inline">\(N_y = 4\)</span>) with indices <span
+class="math inline">\(i \in \{0,1,2,3\}\)</span> (x-axis) and <span
+class="math inline">\(j \in \{0,1,2,3\}\)</span> (y-axis). The field is
+represented as: <span class="math display">\[t_f = \begin{bmatrix}
+t_{0,0} &amp; t_{0,1} &amp; t_{0,2} &amp; t_{0,3} \\
+t_{1,0} &amp; t_{1,1} &amp; t_{1,2} &amp; t_{1,3} \\
+t_{2,0} &amp; t_{2,1} &amp; t_{2,2} &amp; t_{2,3} \\
+t_{3,0} &amp; t_{3,1} &amp; t_{3,2} &amp; t_{3,3}
+\end{bmatrix}.\]</span> The interior points form a <span
+class="math inline">\(2 \times 2\)</span> grid: <span
+class="math inline">\(i \in \{1,2\}\)</span>, <span
+class="math inline">\(j \in \{1,2\}\)</span>.</p>
+<h4 id="pointwise-second-derivative-in-x-direction">Pointwise Second
+Derivative in X-Direction</h4>
+<p>For any interior point <span class="math inline">\((i,j)\)</span>,
+the second-order centered difference is: <span
+class="math display">\[\frac{\partial^2 t}{\partial x^2}\bigg|_{i,j} =
+\frac{t_{i+1,j} - 2t_{i,j} + t_{i-1,j}}{\Delta h^2}.\]</span></p>
+<p>Explicit computations for all interior points:</p>
+<ul>
+<li><p>At <span class="math inline">\((1,1)\)</span>: <span
+class="math inline">\(\frac{t_{2,1} - 2t_{1,1} + t_{0,1}}{\Delta
+h^2}\)</span></p></li>
+<li><p>At <span class="math inline">\((1,2)\)</span>: <span
+class="math inline">\(\frac{t_{2,2} - 2t_{1,2} + t_{0,2}}{\Delta
+h^2}\)</span></p></li>
+<li><p>At <span class="math inline">\((2,1)\)</span>: <span
+class="math inline">\(\frac{t_{3,1} - 2t_{2,1} + t_{1,1}}{\Delta
+h^2}\)</span></p></li>
+<li><p>At <span class="math inline">\((2,2)\)</span>: <span
+class="math inline">\(\frac{t_{3,2} - 2t_{2,2} + t_{1,2}}{\Delta
+h^2}\)</span></p></li>
+</ul>
+<h4 id="vectorized-x-term-operation">Vectorized X-Term Operation</h4>
+<p>The vectorized code computes: <span
+class="math display">\[\text{x\_term} = t_f[2:, 1:-1] - 2t_f[1:-1, 1:-1]
++ t_f[:-2, 1:-1],\]</span> which corresponds to the following subarrays:
+<span class="math display">\[\begin{split}
+t_f[2:, 1:-1] = \begin{bmatrix}
+t_{2,1} &amp; t_{2,2} \\
+t_{3,1} &amp; t_{3,2}
+\end{bmatrix}, \\ \quad
+t_f[1:-1, 1:-1] = \begin{bmatrix}
+t_{1,1} &amp; t_{1,2} \\
+t_{2,1} &amp; t_{2,2}
+\end{bmatrix},\\ \quad
+t_f[:-2, 1:-1] = \begin{bmatrix}
+t_{0,1} &amp; t_{0,2} \\
+t_{1,1} &amp; t_{1,2}
+\end{bmatrix}.
+\end{split}\]</span></p>
+<p>The element-wise computation gives: <span
+class="math display">\[\text{x\_term} = \begin{bmatrix}
+t_{2,1}-2t_{1,1}+t_{0,1} &amp; t_{2,2}-2t_{1,2}+t_{0,2} \\
+t_{3,1}-2t_{2,1}+t_{1,1} &amp; t_{3,2}-2t_{2,2}+t_{1,2}
+\end{bmatrix}.\]</span></p>
+<p>Comparing components: <span class="math display">\[\begin{aligned}
+\text{x\_term}[0,0] &amp;= t_{2,1} - 2t_{1,1} + t_{0,1} \quad
+(\text{matches } (i=1, j=1)) \\
+\text{x\_term}[0,1] &amp;= t_{2,2} - 2t_{1,2} + t_{0,2} \quad
+(\text{matches } (i=1, j=2)) \\
+\text{x\_term}[1,0] &amp;= t_{3,1} - 2t_{2,1} + t_{1,1} \quad
+(\text{matches } (i=2, j=1)) \\
+\text{x\_term}[1,1] &amp;= t_{3,2} - 2t_{2,2} + t_{1,2} \quad
+(\text{matches } (i=2, j=2))
+\end{aligned}\]</span> Thus, the vectorized x-term operation is
+mathematically equivalent to applying the second-order centered
+difference formula pointwise to every interior grid point.</p>
+<h1 id="findings">Findings</h1>
+<p>After having run and applied the methodology to a simulation with the
+following configuration: Method outlined in the hypothesis: <span
+class="math inline">\(\Delta h\)</span> = 1 <span
+class="math inline">\(\Delta t\)</span> = 0.0016 <code>intended_t</code>
+= 100 and 300 for the "top" boundary for the "bottom" boundary for the
+"front" boundary for the "back" boundary for the "left" boundary and 300
+for the "right" boundary The FTCS method differs in <span
+class="math inline">\(\Delta h\)</span> = 0.1 <span
+class="math inline">\(\Delta t\)</span> = 0.000015</p>
+<p>Run on a computer using 16GB of DDR4 RAM, a Ryzen 1200 and a GTX
+1050Ti on Windows 10</p>
+<p>After running and comparing the results of both simulations as
+outlined in the Methodology section, it can be seen that the average
+relative error between the method outlined in the hypothesis and the
+standard FTCS approach is <span class="math inline">\(0.31\%\)</span>,
+with the largest amount of relative error reaching <span
+class="math inline">\(0.71\%\)</span> and the lowest being <span
+class="math inline">\(0.02\%\)</span>. The time needed to run the FTCS
+approach was an average of 11 minutes 23 seconds for each simulation and
+45 seconds for the approach outlined in the Hypothesis, a reduction of
+<span class="math inline">\(93.4\%\)</span>.</p>
+<h1 id="discussion-conclusion">Discussion &amp; Conclusion</h1>
+<p>As shown in the Findings section, the relative error of setting the
+space discretization to 1 is negligible, especially in relation to the
+FLOP savings outlined within the Hypothesis. This supports the
+hypothesis because, as shown, the computing power needed has indeed
+declined by an amount far surpassing any amounts predicted in the
+hypothesis. This does cast doubt as to whether my initial reasoning for
+the hypothesis is the correct answer to the results it creates.
+Additionally, the relative error between the method of the hypothesis
+and the standard FTCS is negligible, meaning that this performance gain
+has been made without any major reduction in simulation accuracy. I
+would conjecture that such gains over those that I predicted might be
+caused by the CPU caching the algorithm differently, over which I sadly
+have no control or way to prove. Otherwise, it could be the case that
+the amount of iterations saved is so immense that it adds up to the
+<span class="math inline">\(93\%\)</span> decrease, which given the
+stability equations’ <span class="math inline">\(h^2\)</span> term on
+the top of the fraction does seem likely yet still surpasses my
+expectations greatly. A limitation, however, was the small set of
+simulations I ended up performing after using most of my research time
+on other things and losing myself in unrelated material. I invite all
+readers to both replicate my results but also try to apply this method
+under different boundary conditions, and also cases where <span
+class="math inline">\(\Delta h\)</span> is actually decreased to 1
+instead of my study’s exclusive focus on having it increased.</p>
+<p>In conclusion, this paper sought to answer the hypothesis of whether
+or not setting <span class="math inline">\(\Delta h\)</span> would
+increase performance while making a comparatively small impact on
+accuracy. This hypothesis holds up with resounding success, marking a
+decent increase in the efficiency of the FTCS method.</p>
+<h1 class="unnumbered" id="appendix">Appendix</h1>
+<p><a
+href="#https://docs.google.com/spreadsheets/d/1-PNBsvbT6ns1lJUWZ2eT14EXpoT0klXGX39SxBH8iHo/edit?gid=558289410#gid=558289410">Data
+Analytics Spreadsheet</a></p>
+<p><a
+href="#https://github.com/Vincent-Boehm/Besondere-Lernleistung">GitHub
+Repository</a></p>
+<figure id="fig:FTCS_MAIN_LOOP">
+<img src="images/graphs/FTCS_sim_loop.png" style="width:50.0%" />
+<figcaption>FTCS main loop graph</figcaption>
+</figure>
+</body>
+</html>
